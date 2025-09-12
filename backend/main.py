@@ -1,5 +1,3 @@
-# backend/main.py
-
 import os
 import pandas as pd
 from fastapi import FastAPI
@@ -78,7 +76,6 @@ You are a friendly rideshare assistant.
 The dataset includes trip_id, booking_user_id, pickup/dropoff coordinates,
 pickup/dropoff addresses, trip date and time, and total passengers.
 
-- Highlight popular pick-up points and destinations.
 - Suggest grouping options if trips are nearby in space/time.
 - Explain dates/times naturally.
 - Be conversational and helpful.
@@ -95,23 +92,4 @@ User question: {query.question}
     else:
         answer = str(response)
 
-    # Top 5 pickup/dropoff locations for map display
-    top_pickups = (
-        df.groupby(["pickup_latitude", "pickup_longitude", "pickup_address"])
-        .size()
-        .reset_index(name="count")
-        .sort_values("count", ascending=False)
-        .head(5)
-        .to_dict(orient="records")
-    )
-
-    top_dropoffs = (
-        df.groupby(["dropoff_latitude", "dropoff_longitude", "dropoff_address"])
-        .size()
-        .reset_index(name="count")
-        .sort_values("count", ascending=False)
-        .head(5)
-        .to_dict(orient="records")
-    )
-
-    return {"reply": answer, "top_pickups": top_pickups, "top_dropoffs": top_dropoffs}
+    return {"reply": answer}
