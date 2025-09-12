@@ -2,6 +2,33 @@
 
 import { useState, useRef, useEffect } from "react"
 
+const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+
+const sendMessage = async () => {
+  if (!input.trim()) return;
+
+  const userMessage = { role: "user", text: input };
+  setMessages(prev => [...prev, userMessage]);
+  setInput("");
+
+  try {
+    const res = await fetch(`${backendUrl}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: input }),
+    });
+
+    if (!res.ok) throw new Error("Network response was not ok");
+
+    const data = await res.json();
+    setMessages(prev => [...prev, { role: "bot", text: data.answer || data.reply }]);
+  } catch (err) {
+    console.error(err);
+    setMessages(prev => [...prev, { role: "bot", text: "Error: could not reach server." }]);
+  }
+};
+
+
 export default function Chat() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState("")
@@ -14,7 +41,7 @@ export default function Chat() {
     setInput("")
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+      const res = await fetch(`${backendUrl}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
