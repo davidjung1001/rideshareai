@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 FRONTEND_URL = os.getenv("FRONTEND_URL")
+origins = [FRONTEND_URL, "http://localhost:3000/chat",]
 
 # ----------------------------
 # Sample rideshare data
@@ -49,7 +50,7 @@ app = FastAPI()
 # ----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],  # React app origin
+    allow_origins=["http://localhost:3000", "https://rideshareai.vercel.app"],  # React app origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
