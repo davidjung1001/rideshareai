@@ -16,7 +16,7 @@ export default function Chat() {
     setInput("")
 
     try {
-      const res = await fetch(`${backendUrl}/chat`, {
+      const res = await fetch("https://rideshareai.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
