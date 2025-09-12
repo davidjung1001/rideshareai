@@ -70,6 +70,7 @@ async def root():
     return {"message": "Backend is running. Use /chat to send questions."}
 
 @app.post("/chat")
+@app.post("/chat/")
 async def chat(query: Query):
     # Prompt for verbal, friendly responses
     query_text = f"""
