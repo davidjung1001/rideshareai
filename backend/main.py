@@ -37,8 +37,8 @@ df["large_group"] = df["size"] > 10
 # ----------------------------
 # Initialize LLM and agent
 # ----------------------------
-llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
-agent = create_pandas_dataframe_agent(llm, df, verbose=False, allow_dangerous_code=True)
+llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
+agent = create_pandas_dataframe_agent(llm, df, verbose=False, allow_dangerous_code=True, handle_parsing_errors=True)
 
 # ----------------------------
 # FastAPI setup
@@ -67,12 +67,19 @@ async def root():
 class Query(BaseModel):
     question: str
 
+
 # ----------------------------
 # Chat endpoint
 # ----------------------------
 @app.post("/chat")
 async def chat(query: Query):
-    response = agent.invoke({"input": query.question})
+    query_text = f"""
+You are a friendly rideshare assistant.
+Provide helpful, detailed, and conversational answers.
+If you refer to groups or times, explain them natrually.
+User question: {query.question}
+"""
+    response = agent.invoke({"input": query_text})
     # Make sure we return a string for JSON
     if hasattr(response, "get") and "output_text" in response.get("output_text", {}):
         answer = response["output_text"]
