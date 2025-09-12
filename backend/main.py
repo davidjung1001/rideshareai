@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # ----------------------------
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000", "https://rideshareai.vercel.app/chat")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # ----------------------------
 # Sample rideshare data
