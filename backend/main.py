@@ -55,6 +55,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "Backend is running. Use /chat to send questions."}
+
+
 # ----------------------------
 # Request model
 # ----------------------------
