@@ -37,7 +37,9 @@ df = pd.read_csv(DATA_PATH)
 df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
 
 # Convert datetime and add helper columns
-df["trip_date_and_time"] = pd.to_datetime(df["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce")
+df["trip_date_and_time"] = pd.to_datetime(
+    df["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce"
+)
 df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
 df["hour"] = df["trip_date_and_time"].dt.hour
 df["day"] = df["trip_date_and_time"].dt.date
@@ -68,6 +70,7 @@ class Query(BaseModel):
 async def root():
     return {"message": "Backend is running. Use /chat to send questions."}
 
+
 @app.post("/chat")
 async def chat(query: Query):
     # Build a friendly, conversational prompt
@@ -94,4 +97,30 @@ User question: {query.question}
         print("Agent error:", e)
         answer = "Sorry, I couldn't generate an answer at this time."
 
-    return {"reply": answer}
+    # ----------------------------
+    # Compute top pickup/dropoff patterns
+    # ----------------------------
+    try:
+        top_pickups = (
+            df.groupby(["pickup_latitude", "pickup_longitude", "pickup_address"])
+            .size()
+            .reset_index(name="count")
+            .sort_values("count", ascending=False)
+            .head(5)
+            .to_dict(orient="records")
+        )
+
+        top_dropoffs = (
+            df.groupby(["dropoff_latitude", "dropoff_longitude", "dropoff_address"])
+            .size()
+            .reset_index(name="count")
+            .sort_values("count", ascending=False)
+            .head(5)
+            .to_dict(orient="records")
+        )
+    except Exception as e:
+        print("Pattern error:", e)
+        top_pickups = []
+        top_dropoffs = []
+
+    return {"reply": answer, "top_pickups": top_pickups, "top_dropoffs": top_dropoffs}
