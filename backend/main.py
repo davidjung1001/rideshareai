@@ -43,6 +43,7 @@ df["trip_date_and_time"] = pd.to_datetime(
 df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
 df["hour"] = df["trip_date_and_time"].dt.hour
 df["day"] = df["trip_date_and_time"].dt.date
+df["weekday"] = df["trip_date_and_time"].dt.day_name()   
 df["large_group"] = df["total_passengers"] > 4
 
 # ----------------------------
@@ -71,6 +72,8 @@ async def root():
     return {"message": "Backend is running. Use /chat to send questions."}
 
 
+
+
 @app.post("/chat")
 async def chat(query: Query):
     # Build a friendly, conversational prompt
@@ -92,7 +95,7 @@ User question: {query.question}
         if hasattr(response, "get") and "output_text" in response.get("output_text", {}):
             answer = response["output_text"]
         else:
-            answer = str(response)
+            answer = response.get("output") or str(response)
     except Exception as e:
         print("Agent error:", e)
         answer = "Sorry, I couldn't generate an answer at this time."
@@ -124,3 +127,8 @@ User question: {query.question}
         top_dropoffs = []
 
     return {"reply": answer, "top_pickups": top_pickups, "top_dropoffs": top_dropoffs}
+
+@app.get("/trips")
+async def get_trips():
+    return df.to_dict(orient="records")
+
