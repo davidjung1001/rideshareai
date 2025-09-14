@@ -41,7 +41,7 @@ for df in [trips_df, trip_user_df, users_df]:
     df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
 
 trips_merged = trips_df.merge(trip_user_df, on="trip_id", how="left")
-trips_merged = trips_merged.merger(users_df, on="user_id", how="left")
+trips_merged = trips_merged.merge(users_df, on="user_id", how="left")
 trips_merged = trips_merged.sort_values(by="trip_date_and_time", ascending=False)
 
 
@@ -54,6 +54,32 @@ trips_merged["hour"] = trips_merged["trip_date_and_time"].dt.hour
 trips_merged["day"] = trips_merged["trip_date_and_time"].dt.date
 trips_merged["weekday"] = trips_merged["trip_date_and_time"].dt.day_name()   
 trips_merged["large_group"] = trips_merged["total_passengers"] > 6
+
+# For map
+
+map_center = [trips_merged["pickup_latitude"].mean(), trips_merged["pickup_longitude"].mean()]
+rideshare_map = folium.Map(location=map_center, zoom_start=12)
+
+# Add pickup markers
+for idx, row in trips_merged.iterrows():
+    folium.Marker(
+        location=[row["pickup_latitude"], row["pickup_longitude"]],
+        popup=f"Pickup: {row['pickup_address']}\nTime: {row['trip_date_and_time']}",
+        icon=folium.Icon(color="green", icon="arrow-up")
+    ).add_to(rideshare_map)
+
+# Add dropoff markers
+for idx, row in trips_merged.iterrows():
+    folium.Marker(
+        location=[row["dropoff_latitude"], row["dropoff_longitude"]],
+        popup=f"Dropoff: {row['dropoff_address']}\nTime: {row['trip_date_and_time']}",
+        icon=folium.Icon(color="red", icon="arrow-down")
+    ).add_to(rideshare_map)
+
+# Save the map as HTML
+rideshare_map.save("rideshare_map.html")
+
+
 
 # ----------------------------
 # Initialize AI agent
