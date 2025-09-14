@@ -44,7 +44,7 @@ df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
 df["hour"] = df["trip_date_and_time"].dt.hour
 df["day"] = df["trip_date_and_time"].dt.date
 df["weekday"] = df["trip_date_and_time"].dt.day_name()   
-df["large_group"] = df["total_passengers"] > 4
+df["large_group"] = df["total_passengers"] > 6
 
 # ----------------------------
 # Initialize AI agent
