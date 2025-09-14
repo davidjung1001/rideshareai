@@ -30,7 +30,7 @@ app.add_middleware(
 # ----------------------------
 # Load trip data safely
 # ----------------------------
-DATA_PATH = "data/trip_data.csv"
+DATA_PATH = "data/rideshare_preprocessed.csv"
 df = pd.read_csv(DATA_PATH)
 
 # Standardize column names
