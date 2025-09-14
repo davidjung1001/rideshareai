@@ -30,7 +30,7 @@ app.add_middleware(
 # ----------------------------
 # Load trip data safely
 # ----------------------------
-DATA_PATH = "data/rideshare_preprocessed.csv"
+DATA_PATH = "data/trip_data.csv"
 df = pd.read_csv(DATA_PATH)
 
 # Standardize column names
@@ -38,7 +38,7 @@ df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
 
 # Convert datetime and add helper columns
 df["trip_date_and_time"] = pd.to_datetime(
-    df["trip_date_and_time"], format="%m/%d/%Y %H:%M", errors="coerce"
+    df["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce"
 )
 df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
 df["hour"] = df["trip_date_and_time"].dt.hour
