@@ -104,8 +104,8 @@ User question: {query.question}
     # Compute top pickup/dropoff patterns
     # ----------------------------
     try:
-        top_pickups = (
-            df.groupby(["pickup_latitude", "pickup_longitude", "pickup_address"])
+        top_pick_ups = (
+            df.groupby(["pick_up_latitude", "pick_up_longitude", "pick_up_address"])
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -113,8 +113,8 @@ User question: {query.question}
             .to_dict(orient="records")
         )
 
-        top_dropoffs = (
-            df.groupby(["dropoff_latitude", "dropoff_longitude", "dropoff_address"])
+        top_drop_offs = (
+            df.groupby(["drop_off_latitude", "drop_off_longitude", "drop_off_address"])
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -126,7 +126,7 @@ User question: {query.question}
         top_pickups = []
         top_dropoffs = []
 
-    return {"reply": answer, "top_pickups": top_pickups, "top_dropoffs": top_dropoffs}
+    return {"reply": answer, "top_pick_ups": top_pick_ups, "top_drop_offs": top_drop_offs}
 
 @app.get("/trips")
 async def get_trips():
