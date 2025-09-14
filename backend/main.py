@@ -6,7 +6,6 @@ from pydantic import BaseModel
 from langchain_community.chat_models import ChatOpenAI
 from langchain_experimental.agents import create_pandas_dataframe_agent
 from dotenv import load_dotenv
-import folium
 
 # ----------------------------
 # Load environment variables
@@ -31,56 +30,21 @@ app.add_middleware(
 # ----------------------------
 # Load trip data safely
 # ----------------------------
-DATA_PATH = "data/rideshare_data.xlsx"
-xls = pd.ExcelFile(DATA_PATH)
+DATA_PATH = "data/rideshare_preprocessed.csv"
+df = pd.read_csv(DATA_PATH)
 
-trips_df = pd.read_excel(xls, sheet_name="Trip Data")
-trip_user_df = pd.read_excel(xls, sheet_name="Checked in User ID's")
-users_df = pd.read_excel(xls, sheet_name="Customer Demographics")
 # Standardize column names
-for df in [trips_df, trip_user_df, users_df]:
-    df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
-
-trips_merged = trips_df.merge(trip_user_df, on="trip_id", how="left")
-trips_merged = trips_merged.merge(users_df, on="user_id", how="left")
-trips_merged = trips_merged.sort_values(by="trip_date_and_time", ascending=False)
-
+df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
 
 # Convert datetime and add helper columns
-trips_merged["trip_date_and_time"] = pd.to_datetime(
-    trips_merged["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce"
+df["trip_date_and_time"] = pd.to_datetime(
+    df["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce"
 )
-trips_merged = trips_merged.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
-trips_merged["hour"] = trips_merged["trip_date_and_time"].dt.hour
-trips_merged["day"] = trips_merged["trip_date_and_time"].dt.date
-trips_merged["weekday"] = trips_merged["trip_date_and_time"].dt.day_name()   
-trips_merged["large_group"] = trips_merged["total_passengers"] > 6
-
-# For map
-
-map_center = [trips_merged["pick_up_latitude"].mean(), trips_merged["pick_up_longitude"].mean()]
-rideshare_map = folium.Map(location=map_center, zoom_start=12)
-
-# Add pickup markers
-for idx, row in trips_merged.iterrows():
-    folium.Marker(
-        location=[row["pick_up_latitude"], row["pick_up_longitude"]],
-        popup=f"Pickup: {row['pick_up_address']}\nTime: {row['trip_date_and_time']}",
-        icon=folium.Icon(color="green", icon="arrow-up")
-    ).add_to(rideshare_map)
-
-# Add dropoff markers
-for idx, row in trips_merged.iterrows():
-    folium.Marker(
-        location=[row["drop_off_latitude"], row["drop_off_longitude"]],
-        popup=f"Dropoff: {row['drop_off_address']}\nTime: {row['trip_date_and_time']}",
-        icon=folium.Icon(color="red", icon="arrow-down")
-    ).add_to(rideshare_map)
-
-# Save the map as HTML
-rideshare_map.save("rideshare_map.html")
-
-
+df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
+df["hour"] = df["trip_date_and_time"].dt.hour
+df["day"] = df["trip_date_and_time"].dt.date
+df["weekday"] = df["trip_date_and_time"].dt.day_name()   
+df["large_group"] = df["total_passengers"] > 4
 
 # ----------------------------
 # Initialize AI agent
@@ -88,7 +52,7 @@ rideshare_map.save("rideshare_map.html")
 llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
 agent = create_pandas_dataframe_agent(
     llm,
-    trips_merged,
+    df,
     verbose=False,
     allow_dangerous_code=True,
     handle_parsing_errors=True,
@@ -141,7 +105,7 @@ User question: {query.question}
     # ----------------------------
     try:
         top_pickups = (
-            trips_merged.groupby(["pick_up_latitude", "pick_up_longitude", "pick_up_address"])
+            df.groupby(["pickup_latitude", "pickup_longitude", "pickup_address"])
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -150,7 +114,7 @@ User question: {query.question}
         )
 
         top_dropoffs = (
-            trips_merged.groupby(["drop_off_latitude", "drop_off_longitude", "drop_off_address"])
+            df.groupby(["dropoff_latitude", "dropoff_longitude", "dropoff_address"])
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -166,5 +130,5 @@ User question: {query.question}
 
 @app.get("/trips")
 async def get_trips():
-    return trips_merged.to_dict(orient="records")
+    return df.to_dict(orient="records")
 
