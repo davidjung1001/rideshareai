@@ -30,21 +30,30 @@ app.add_middleware(
 # ----------------------------
 # Load trip data safely
 # ----------------------------
-DATA_PATH = "data/trip_data.csv"
-df = pd.read_csv(DATA_PATH)
+DATA_PATH = "data/rideshare_data.xlsx"
+xls = pd.ExcelFile(DATA_PATH)
 
+trips_df = pd.read_excel(xls, sheet_name="Trip Data")
+trip_user_df = pd.read_excel(xls, sheet_name="Checked in User ID's")
+users_df = pd.read_excel(xls, sheet_name="Customer Demographics")
 # Standardize column names
-df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+for df in [trips_df, trip_user_df, users_df]:
+    df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+
+trips_merged = trips_df.merge(trip_user_df, on="trip_id", how="left")
+trips_merged = trips_merged.merger(users_df, on="user_id", how="left")
+trips_merged = trips_merged.sort_values(by="trip_date_and_time", ascending=False)
+
 
 # Convert datetime and add helper columns
-df["trip_date_and_time"] = pd.to_datetime(
-    df["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce"
+trips_merged["trip_date_and_time"] = pd.to_datetime(
+    trips_merged["trip_date_and_time"], format="%m/%d/%y %H:%M", errors="coerce"
 )
-df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
-df["hour"] = df["trip_date_and_time"].dt.hour
-df["day"] = df["trip_date_and_time"].dt.date
-df["weekday"] = df["trip_date_and_time"].dt.day_name()   
-df["large_group"] = df["total_passengers"] > 4
+trips_merged = trips_merged.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
+trips_merged["hour"] = trips_merged["trip_date_and_time"].dt.hour
+trips_merged["day"] = trips_merged["trip_date_and_time"].dt.date
+trips_merged["weekday"] = trips_merged["trip_date_and_time"].dt.day_name()   
+trips_merged["large_group"] = trips_merged["total_passengers"] > 6
 
 # ----------------------------
 # Initialize AI agent
@@ -52,7 +61,7 @@ df["large_group"] = df["total_passengers"] > 4
 llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
 agent = create_pandas_dataframe_agent(
     llm,
-    df,
+    trips_merged,
     verbose=False,
     allow_dangerous_code=True,
     handle_parsing_errors=True,
@@ -105,7 +114,7 @@ User question: {query.question}
     # ----------------------------
     try:
         top_pickups = (
-            df.groupby(["pickup_latitude", "pickup_longitude", "pickup_address"])
+            trips_merged.groupby(["pickup_latitude", "pickup_longitude", "pickup_address"])
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -114,7 +123,7 @@ User question: {query.question}
         )
 
         top_dropoffs = (
-            df.groupby(["dropoff_latitude", "dropoff_longitude", "dropoff_address"])
+            trips_merged.groupby(["dropoff_latitude", "dropoff_longitude", "dropoff_address"])
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -130,5 +139,5 @@ User question: {query.question}
 
 @app.get("/trips")
 async def get_trips():
-    return df.to_dict(orient="records")
+    return trips_merged.to_dict(orient="records")
 
