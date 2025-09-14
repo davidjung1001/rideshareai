@@ -6,26 +6,9 @@ import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 
 // Dynamically import TripMap to disable SSR
-const TripMap = dynamic(() => import('@/components/TripMap'), { ssr: false })
 
 export default function ChatPage() {
-  const [trips, setTrips] = useState([])
-
-  // Fetch or load your real trip data
-  useEffect(() => {
-    // Example: fetch from your backend or import a JSON file
-    const fetchTrips = async () => {
-      try {
-        const res = await fetch('/api/trips') // replace with your API or local JSON
-        const data = await res.json()
-        setTrips(data)
-      } catch (err) {
-        console.error("Failed to load trips:", err)
-      }
-    }
-
-    fetchTrips()
-  }, [])
+  
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white p-4">
