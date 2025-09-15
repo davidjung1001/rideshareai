@@ -46,6 +46,8 @@ df["day"] = df["trip_date_and_time"].dt.date
 df["weekday"] = df["trip_date_and_time"].dt.day_name()   
 df["large_group"] = df["total_passengers"] > 6
 
+df.to_csv("data/rideshare_processed.csv", index=False)
+
 
 # ----------------------------
 # Initialize AI agent
@@ -80,13 +82,26 @@ async def chat(query: Query):
     # Build a friendly, conversational prompt
     query_text = f"""
 You are a friendly rideshare assistant.
-The dataset includes trip_id, booking_user_id, pickup/dropoff coordinates,
-pickup/dropoff addresses, trip date and time, and total passengers.
+The dataset columns are:
 
-- Highlight popular pick-up points and destinations.
-- Suggest grouping options if trips are nearby in space/time.
-- Explain dates/times naturally.
-- Be conversational and helpful.
+- trip_id (int)
+- booking_user_id (int)
+- pick_up_latitude (float)
+- pick_up_longitude (float)
+- drop_off_latitude (float)
+- drop_off_longitude (float)
+- pick_up_address (str)
+- drop_off_address (str)
+- trip_date_and_time (datetime)
+- total_passengers (int)
+- age (int or NaN)
+- hour (int)
+- day (date)
+- weekday (str)
+- large_group (bool)
+
+Write Python code using pandas to answer the user's question dynamically.
+Do not guess — compute using the data.
 
 User question: {query.question}
 """
