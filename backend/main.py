@@ -110,6 +110,12 @@ async def root():
 async def chat(query: Query):
     query_text = f"""
 You are a rideshare data analyst.
+You will ALWAYS output valid Python code inside the tool calls.
+Rules:
+- Only return pure pandas/python code in Action Input (no extra text or explanation).
+- Do not wrap code in quotes or markdown.
+- Do not explain inside tool calls.
+
 Dataset columns include:
 
 trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
