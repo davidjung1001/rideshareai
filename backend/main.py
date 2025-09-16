@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 # ----------------------------
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 # ----------------------------
 # FastAPI setup
@@ -28,35 +27,68 @@ app.add_middleware(
 )
 
 # ----------------------------
-# Load trip data safely
+# Load trip data
 # ----------------------------
 DATA_PATH = "data/rideshare_preprocessed.csv"
 df = pd.read_csv(DATA_PATH)
 
-# Standardize column names
+# Clean column names
 df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
 
-# Convert datetime and add helper columns
-
+# Convert datetime
 df["trip_date_and_time"] = pd.to_datetime(df["trip_date_and_time"], errors="coerce")
+df = df.dropna(subset=["trip_date_and_time"])
 
-df = df.dropna(subset=["trip_date_and_time"])  # drop rows with invalid dates
+# Helper columns
 df["hour"] = df["trip_date_and_time"].dt.hour
 df["day"] = df["trip_date_and_time"].dt.date
-df["weekday"] = df["trip_date_and_time"].dt.day_name()   
+df["weekday"] = df["trip_date_and_time"].dt.day_name().str.lower()
 df["large_group"] = df["total_passengers"] > 6
 
-df.to_csv("data/rideshare_processed.csv", index=False)
+# Age groups
+def age_bucket(age):
+    if pd.isna(age):
+        return "unknown"
+    age = int(age)
+    if 18 <= age <= 24:
+        return "18-24"
+    elif 25 <= age <= 34:
+        return "25-34"
+    elif 35 <= age <= 44:
+        return "35-44"
+    else:
+        return "45+"
 
+df["age_group"] = df["age"].apply(age_bucket)
+
+# Optional: normalize hotspots
+hotspot_map = {
+    "moody center": "Moody Center",
+    "coconut club": "Coconut Club",
+    "buford": "Buford's",
+    "the aquarium": "The Aquarium on 6th",
+}
+def normalize_address(addr: str):
+    if not isinstance(addr, str):
+        return addr
+    a = addr.lower()
+    for k, v in hotspot_map.items():
+        if k in a:
+            return v
+    return addr
+
+df["drop_off_normalized"] = df["drop_off_address"].apply(normalize_address)
+df["pick_up_normalized"] = df["pick_up_address"].apply(normalize_address)
 
 # ----------------------------
 # Initialize AI agent
 # ----------------------------
-llm = ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
+llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
+
 agent = create_pandas_dataframe_agent(
     llm,
     df,
-    verbose=False,
+    verbose=True,
     allow_dangerous_code=True,
     handle_parsing_errors=True,
 )
@@ -74,54 +106,35 @@ class Query(BaseModel):
 async def root():
     return {"message": "Backend is running. Use /chat to send questions."}
 
-
-
-
 @app.post("/chat")
 async def chat(query: Query):
-    # Build a friendly, conversational prompt
     query_text = f"""
-You are a friendly rideshare assistant.
-The dataset columns are:
+You are a rideshare data analyst.
+Dataset columns include:
 
-- trip_id (int)
-- booking_user_id (int)
-- pick_up_latitude (float)
-- pick_up_longitude (float)
-- drop_off_latitude (float)
-- drop_off_longitude (float)
-- pick_up_address (str)
-- drop_off_address (str)
-- trip_date_and_time (datetime)
-- total_passengers (int)
-- age (int or NaN)
-- hour (int)
-- day (date)
-- weekday (str)
-- large_group (bool)
+trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
+drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
+drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
+age, age_group, hour, day, weekday, large_group.
 
-Write Python code using pandas to answer the user's question dynamically.
-Do not guess — compute using the data.
+Rules:
+- Only answer based on the dataset.
+- Always compute using pandas operations.
+- If uncertain, say "I don’t know from this data."
 
 User question: {query.question}
 """
     try:
         response = agent.invoke({"input": query_text})
-        # Safely convert to string
-        if hasattr(response, "get") and "output_text" in response.get("output_text", {}):
-            answer = response["output_text"]
-        else:
-            answer = response.get("output") or str(response)
+        answer = response.get("output", str(response))
     except Exception as e:
         print("Agent error:", e)
-        answer = "Sorry, I couldn't generate an answer at this time."
+        answer = "Sorry, I couldn't generate an answer."
 
-    # ----------------------------
-    # Compute top pickup/dropoff patterns
-    # ----------------------------
+    # Compute global patterns
     try:
         top_pick_ups = (
-            df.groupby(["pick_up_latitude", "pick_up_longitude", "pick_up_address"])
+            df.groupby("pick_up_normalized")
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -130,7 +143,7 @@ User question: {query.question}
         )
 
         top_drop_offs = (
-            df.groupby(["drop_off_latitude", "drop_off_longitude", "drop_off_address"])
+            df.groupby("drop_off_normalized")
             .size()
             .reset_index(name="count")
             .sort_values("count", ascending=False)
@@ -139,12 +152,14 @@ User question: {query.question}
         )
     except Exception as e:
         print("Pattern error:", e)
-        top_pickups = []
-        top_dropoffs = []
+        top_pick_ups, top_drop_offs = [], []
 
-    return {"reply": answer, "top_pick_ups": top_pick_ups, "top_drop_offs": top_drop_offs}
+    return {
+        "reply": answer,
+        "top_pick_ups": top_pick_ups,
+        "top_drop_offs": top_drop_offs,
+    }
 
 @app.get("/trips")
 async def get_trips():
     return df.to_dict(orient="records")
-
