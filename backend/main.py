@@ -110,17 +110,27 @@ async def root():
 async def chat(query: Query):
     query_text = f"""
 You are a rideshare data analyst.
-You will ALWAYS use valid Python code to compute answers, but also explain the result in plain English.
+You will ALWAYS output valid Python code inside the tool calls.
+Rules:
+- Only return pure pandas/python code in Action Input (no extra text or explanation).
+- Do not wrap code in quotes or markdown.
+- Do not explain inside tool calls.
+
+Dataset columns include:
+
+trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
+drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
+drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
+age, age_group, hour, day, weekday, large_group.
 
 Rules:
-- Only return pure pandas/python code inside code execution blocks.
-- After computing, provide a short human-readable explanation outside the code.
 - Only answer based on the dataset.
 - Always compute using pandas operations.
 - If uncertain, say "I don’t know from this data."
 
-User question: {query.question}
+Then after, explain with context and details only AFTER computing.
 
+User question: {query.question}
 """
     try:
         response = agent.invoke({"input": query_text})
