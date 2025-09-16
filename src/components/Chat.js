@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState, useRef, useEffect } from "react"
 
@@ -40,7 +40,8 @@ export default function Chat() {
           }
           return newMessages
         })
-        await new Promise(r => setTimeout(r, 15)) // typing speed
+        // faster typing speed (or remove completely for instant response)
+        await new Promise(r => setTimeout(r, 3)) 
       }
     } catch (err) {
       console.error(err)
@@ -68,9 +69,9 @@ export default function Chat() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`max-w-[75%] px-4 py-2 text-sm break-words rounded-md ${
+            className={`max-w-[75%] px-4 py-2 text-sm break-words rounded-xl ${
               m.role === "user"
-                ? "self-end bg-gray-200 text-gray-900"
+                ? "self-end bg-blue-500 text-white"
                 : "self-start bg-gray-800 text-white"
             }`}
           >
@@ -83,21 +84,23 @@ export default function Chat() {
       </div>
 
       {/* Input bar */}
-      <div className="flex p-3 border-t border-gray-700 bg-gray-800">
-        <input
-          type="text"
-          className="flex-1 px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-          placeholder="Type a question..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && sendMessage()}
-        />
-        <button
-          onClick={sendMessage}
-          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-semibold text-sm"
-        >
-          Send
-        </button>
+      <div className="p-3 border-t border-gray-700 bg-gray-900">
+        <div className="flex items-center bg-gray-800 rounded-full px-2 py-1">
+          <input
+            type="text"
+            className="flex-1 px-4 py-2 bg-transparent text-white placeholder-gray-400 focus:outline-none text-sm"
+            placeholder="Type a question..."
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendMessage()}
+          />
+          <button
+            onClick={sendMessage}
+            className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-semibold text-sm"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   )

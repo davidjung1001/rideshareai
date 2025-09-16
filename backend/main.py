@@ -131,14 +131,16 @@ User question: {query.question}
 
     # Step 2: Generate explanation using another call
     try:
-        llm_response = llm.predict(f"""
-User asked: {query.question}
-The computed answer is: {result}
-Explain clearly what this means in context of rideshare trends.
-""")
+        explanation_prompt = f"""
+    User asked: {query.question}
+    The computed answer is: {result}
+    Explain clearly what this means in context of rideshare trends.
+    """
+        llm_response = llm.invoke(explanation_prompt).content
     except Exception as e:
         print("Explanation error:", e)
         llm_response = result
+
 
     # Global patterns (optional)
     top_pick_ups = (
