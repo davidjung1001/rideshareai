@@ -26,8 +26,6 @@ export default function Chat() {
       if (!res.ok) throw new Error("Network response was not ok")
 
       const data = await res.json()
-
-      // Typing effect simulation
       const botText = data.reply || data.answer || ""
       let current = ""
       for (let char of botText) {
@@ -57,12 +55,12 @@ export default function Chat() {
   }, [messages])
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 text-gray-900">
-
+    <div className="flex flex-col h-[70vh] bg-gray-900 text-gray-900 rounded-md shadow-lg overflow-hidden">
+      
       {/* Messages */}
-      <div className="flex-1 flex flex-col justify-end p-6 space-y-3 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-2">
         {messages.length === 0 && (
-          <div className="text-gray-500 self-center mt-4 text-center">
+          <div className="text-gray-400 self-center mt-4 text-center">
             Ask any rideshare question...
           </div>
         )}
@@ -70,24 +68,25 @@ export default function Chat() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`p-3 break-words text-sm shadow-sm max-w-[60%] ${
+            className={`max-w-[75%] px-4 py-2 text-sm break-words rounded-md ${
               m.role === "user"
-                ? "self-end bg-blue-50 text-blue-900 rounded-xl"
-                : "self-start bg-gray-100 text-gray-900 rounded-xl"
+                ? "self-end bg-gray-200 text-gray-900"
+                : "self-start bg-gray-800 text-white"
             }`}
           >
-            {m.text}{m.role === "bot" && loading && <span className="animate-pulse">|</span>}
+            {m.text}
+            {m.role === "bot" && loading && <span className="animate-pulse ml-1">|</span>}
           </div>
         ))}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex p-4 border-t border-gray-300 bg-white flex-shrink-0 space-x-2">
+      {/* Input bar */}
+      <div className="flex p-3 border-t border-gray-700 bg-gray-800">
         <input
           type="text"
-          className="flex-1 p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+          className="flex-1 px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
           placeholder="Type a question..."
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -95,7 +94,7 @@ export default function Chat() {
         />
         <button
           onClick={sendMessage}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition font-semibold text-sm"
+          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-semibold text-sm"
         >
           Send
         </button>
