@@ -142,6 +142,7 @@ User question: {query.question}
         explanation_prompt = f"""
 User asked: {query.question}
 The computed answer is: {result}
+If the computed answer is that they don't know, then do not provide any explantions.
 Briefly summarize in broken down sections with headings and separators what this means in context of rideshare trends using the actual computed data.
 If it is a list, generate a markdown table.
 """

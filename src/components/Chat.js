@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import MessageBubble from "./MessageBubble"
 
 export default function Chat() {
   const [messages, setMessages] = useState([])
@@ -129,9 +130,9 @@ export default function Chat() {
   }, [messages])
 
   return (
-    <div className="flex flex-col h-[70vh] bg-gray-900 text-gray-900 rounded-md shadow-lg overflow-hidden">
+    <div className="flex flex-col h-full">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4
+      <div className="flex-1 overflow-y-auto p-4 p-4 space-y-4
       scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-700">
         {messages.length === 0 && (
           <div className="text-gray-400 self-center mt-4 text-center">
@@ -142,12 +143,7 @@ export default function Chat() {
         {messages.map((m, i) => (
           m.role === "user" ? (
             // User bubble
-            <div
-              key={i}
-              className="max-w-[75%] self-end bg-blue-500 text-white px-4 py-2 text-sm rounded-xl shadow"
-            >
-              {m.text}
-            </div>
+             <MessageBubble key={i} message={m} />
           ) : (
             // Bot response as plain text, no bubble
             <div key={i} className="max-w-3xl self-start text-left">
@@ -160,13 +156,13 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input bar */}
-      <div className="p-3 border-t border-gray-700 bg-gray-900">
-        <div className="flex items-center bg-gray-800 rounded-full px-2 py-1">
+      {/* Fixed input bar */}
+      <div className="fixed bottom-4 left-0 w-full flex justify-center px-4">
+        <div className="flex w-full max-w-3xl bg-gray-800 rounded-full shadow-lg px-4 py-2 items-center">
           <input
             type="text"
-            className="flex-1 px-4 py-2 bg-transparent text-white placeholder-gray-400 focus:outline-none text-sm"
             placeholder="Type a question..."
+            className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none px-4 py-2 rounded-full text-sm"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && sendMessage()}
