@@ -29,7 +29,7 @@ app.add_middleware(
 # ----------------------------
 # Load trip data
 # ----------------------------
-DATA_PATH = "data/rideshare_preprocessed.csv"
+DATA_PATH = "data/rideshare_processed.csv"
 df = pd.read_csv(DATA_PATH)
 
 # Clean column names
@@ -41,9 +41,12 @@ df = df.dropna(subset=["trip_date_and_time"])
 
 # Helper columns
 df["hour"] = df["trip_date_and_time"].dt.hour
-df["day"] = df["trip_date_and_time"].dt.date
-df["weekday"] = df["trip_date_and_time"].dt.day_name().str.lower()
+df["date"] = df["trip_date_and_time"].dt.date
+df["day"] = df["trip_date_and_time"].dt.day_name().str.lower()
 df["large_group"] = df["total_passengers"] > 6
+# Rename columns
+
+
 
 # Age groups
 def age_bucket(age):
@@ -108,64 +111,52 @@ async def root():
 
 @app.post("/chat")
 async def chat(query: Query):
-    # Step 1: Ask the agent to produce the pandas result
+    # Step 1: Prepare prompt for agent
     query_text = f"""
 You are a rideshare data analyst.
-Always produce valid Python/pandas code to compute the answer.
+You must use only the python_repl_ast tool to execute pandas commands on the dataframe df.
+Do not out put output extra words or sentences only the python command to execute.
+Do NOT output raw Python.
+Do not add extra backticks
+If you cannot answer from the dataset, respond with: "I don't know from this data." and explain why you couldn't.
+
 Dataset columns: trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
 drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
 drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
-age, age_group, hour, day, weekday, large_group.
+age, age_group, hour, date, day, large_group. 
 
-Only compute using pandas. If uncertain, say "I don’t know from this data."
 
 User question: {query.question}
 """
+
     try:
+        # Step 2: Let agent compute actual answer
         response = agent.invoke({"input": query_text})
-        # Extract raw result from agent execution
-        result = response.get("output") or str(response)
+        result = response.get("output") or response
     except Exception as e:
         print("Agent error:", e)
         result = "Sorry, I couldn't compute the answer."
 
-    # Step 2: Generate explanation using another call
+    # Step 3: Ask LLM to explain the result
     try:
         explanation_prompt = f"""
-    User asked: {query.question}
-    The computed answer is: {result}
-    Explain clearly what this means in context of rideshare trends.
-    """
+User asked: {query.question}
+The computed answer is: {result}
+Briefly summarize in broken down sections with headings and separators what this means in context of rideshare trends using the actual computed data.
+If it is a list, generate a markdown table.
+"""
         llm_response = llm.invoke(explanation_prompt).content
     except Exception as e:
         print("Explanation error:", e)
         llm_response = result
 
-
-    # Global patterns (optional)
-    top_pick_ups = (
-        df.groupby("pick_up_normalized")
-        .size()
-        .reset_index(name="count")
-        .sort_values("count", ascending=False)
-        .head(5)
-        .to_dict(orient="records")
-    )
-
-    top_drop_offs = (
-        df.groupby("drop_off_normalized")
-        .size()
-        .reset_index(name="count")
-        .sort_values("count", ascending=False)
-        .head(5)
-        .to_dict(orient="records")
-    )
-
     return {
         "reply": llm_response,
-        "top_pick_ups": top_pick_ups,
-        "top_drop_offs": top_drop_offs,
+        "computed_result": result
     }
+
+
+
 
 @app.get("/trips")
 async def get_trips():

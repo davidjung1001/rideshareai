@@ -8,6 +8,78 @@ export default function Chat() {
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
 
+  // -------------------------------
+  // Helper component to render AI
+  // -------------------------------
+  const RenderAIResponse = ({ text }) => {
+    const lines = text.split("\n")
+    let tableRows = []
+    const elements = []
+
+    lines.forEach((line, i) => {
+      line = line.trim()
+      if (!line) return
+
+      // Headings
+      if (line.startsWith("# ")) {
+        elements.push(
+          <h1 key={i} className="text-2xl font-bold text-blue-500 my-1">{line.replace("# ", "")}</h1>
+        )
+        return
+      }
+      if (line.startsWith("## ")) {
+        elements.push(
+          <h2 key={i} className="text-xl font-bold text-blue-400 my-1">{line.replace("## ", "")}</h2>
+        )
+        return
+      }
+
+      // Table rows
+      if (line.includes("\t") || line.includes("|")) {
+        const cells = line.split(/\t|\|/).map(c => c.trim())
+        tableRows.push(cells)
+        return
+      }
+
+      // Render table if we finished collecting rows
+      if (tableRows.length > 0) {
+        elements.push(
+          <div key={`table-${i}`} className="overflow-x-auto my-2">
+            <table className="table-auto border border-gray-700 w-full text-sm">
+              <thead>
+                <tr>
+                  {tableRows[0].map((cell, idx) => (
+                    <th key={idx} className="border px-2 py-1 bg-gray-700 text-white">{cell}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableRows.slice(1).map((row, rIdx) => (
+                  <tr key={rIdx} className="bg-gray-800">
+                    {row.map((cell, cIdx) => (
+                      <td key={cIdx} className="border px-2 py-1 text-white">{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+        tableRows = []
+      }
+
+      // Normal paragraph
+      elements.push(
+        <p key={i} className="text-sm text-white whitespace-pre-wrap my-1">{line}</p>
+      )
+    })
+
+    return <>{elements}</>
+  }
+
+  // -------------------------------
+  // Send message to backend
+  // -------------------------------
   const sendMessage = async () => {
     if (!input.trim()) return
 
@@ -17,7 +89,7 @@ export default function Chat() {
     setLoading(true)
 
     try {
-      const res = await fetch("https://rideshareai.onrender.com/chat", {
+      const res = await fetch("http://127.0.0.1:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),
@@ -27,6 +99,7 @@ export default function Chat() {
 
       const data = await res.json()
       const botText = data.reply || data.answer || ""
+
       let current = ""
       for (let char of botText) {
         current += char
@@ -40,8 +113,7 @@ export default function Chat() {
           }
           return newMessages
         })
-        // faster typing speed (or remove completely for instant response)
-        await new Promise(r => setTimeout(r, 3)) 
+        await new Promise(r => setTimeout(r, 3)) // typing speed
       }
     } catch (err) {
       console.error(err)
@@ -51,15 +123,16 @@ export default function Chat() {
     }
   }
 
+  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
   return (
     <div className="flex flex-col h-[70vh] bg-gray-900 text-gray-900 rounded-md shadow-lg overflow-hidden">
-      
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4
+      scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-700">
         {messages.length === 0 && (
           <div className="text-gray-400 self-center mt-4 text-center">
             Ask any rideshare question...
@@ -67,17 +140,21 @@ export default function Chat() {
         )}
 
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`max-w-[75%] px-4 py-2 text-sm break-words rounded-xl ${
-              m.role === "user"
-                ? "self-end bg-blue-500 text-white"
-                : "self-start bg-gray-800 text-white"
-            }`}
-          >
-            {m.text}
-            {m.role === "bot" && loading && <span className="animate-pulse ml-1">|</span>}
-          </div>
+          m.role === "user" ? (
+            // User bubble
+            <div
+              key={i}
+              className="max-w-[75%] self-end bg-blue-500 text-white px-4 py-2 text-sm rounded-xl shadow"
+            >
+              {m.text}
+            </div>
+          ) : (
+            // Bot response as plain text, no bubble
+            <div key={i} className="max-w-3xl self-start text-left">
+              <RenderAIResponse text={m.text} />
+              {loading && <span className="animate-pulse text-blue-400 text-sm">Typing...</span>}
+            </div>
+          )
         ))}
 
         <div ref={messagesEndRef} />
