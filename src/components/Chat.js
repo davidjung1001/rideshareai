@@ -139,7 +139,7 @@ export default function Chat() {
         setLoading(true)
 
         try {
-            const res = await fetch("https://rideshareai.onrender.com/chat", {
+            const res = await fetch("http://127.0.0.1:8000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question: input }),

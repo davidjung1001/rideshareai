@@ -47,6 +47,15 @@ drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
 drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
 age, age_group, hour, date, day, large_group.
 
+When the user asks for ride counts (e.g., "how many rides on Friday"), you must:
+1. Total rides.
+2. Top 5 pickup locations.
+3. Top 5 dropoff locations.
+4. Average passengers per ride.
+5. Peak ride hours.
+Do NOT add extra backticks.
+If data is missing, state that clearly.
+
 User question: {query.question}
 """
 

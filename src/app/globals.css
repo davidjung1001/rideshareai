@@ -2,30 +2,4 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---------- Global Fixes ---------- */
 
-/* Prevent iOS Safari from zooming inputs when font-size < 16px */
-input, textarea, select, button {
-  font-size: 16px !important;
-}
-
-/* Ensure body takes full height and no unwanted scrollbars */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  background-color: #111827; /* Tailwind gray-900 */
-  color: white;
-  -webkit-text-size-adjust: 100%; /* Prevent text auto-resizing on iOS */
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Prevent iOS “bounce” overscroll if you don’t want it */
-body {
-  overscroll-behavior-y: none;
-}
