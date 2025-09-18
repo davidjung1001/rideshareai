@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 export default function MessageBubble({ message }) {
   if (message.role === "user") {
     return (
-      <div className="max-w-[75%] self-end bg-blue-500 text-white px-4 py-2 text-sm rounded-xl shadow">
+      <div className="max-w-[75%] self-end bg-gray-500 text-white px-4 py-2 text-sm rounded-xl shadow">
         {message.text}
       </div>
     );

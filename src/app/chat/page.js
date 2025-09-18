@@ -1,8 +1,12 @@
 'use client'
 
+import { useState } from "react"
 import Chat from "@/components/Chat"
+import CompanyChat from "@/components/CompanyChat"
 
 export default function ChatPage() {
+  const [activeChat, setActiveChat] = useState("rideshare") // default
+
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center p-4">
       {/* Title */}
@@ -13,18 +17,36 @@ export default function ChatPage() {
       {/* Chat container */}
       <div
         className="
+          relative                 /* Needed for absolute toggle */
           w-full 
-          h-[80vh]           /* Tall enough but not full screen */
-          max-w-3xl          /* Desktop max width */
-          bg-gray-800/90     
-          rounded-2xl        
-          shadow-md 
-          flex flex-col 
+          h-[80vh]
+          max-w-3xl
+          bg-gray-800/90
+          rounded-2xl
+          shadow-md
+          flex flex-col
           overflow-hidden
           bg-transparent
         "
       >
-        <Chat />
+        {/* Left toggle (absolute so it doesn't break layout) */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+          <button
+            className={`px-3 py-1 rounded-xl font-semibold text-sm ${activeChat === "rideshare" ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+            onClick={() => setActiveChat("rideshare")}
+          >
+            Rideshare
+          </button>
+          <button
+            className={`px-3 py-1 rounded-xl font-semibold text-sm ${activeChat === "predictor" ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+            onClick={() => setActiveChat("predictor")}
+          >
+            Predictor
+          </button>
+        </div>
+
+        {/* Chat content */}
+        {activeChat === "rideshare" ? <Chat /> : <CompanyChat />}
       </div>
     </div>
   )

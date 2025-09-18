@@ -1,23 +1,17 @@
+# main.py
 import os
-import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from langchain_community.chat_models import ChatOpenAI
-from langchain_experimental.agents import create_pandas_dataframe_agent
 from dotenv import load_dotenv
 
-# ----------------------------
-# Load environment variables
-# ----------------------------
+from agents.rider_agent import rider_agent, df, llm as rider_llm
+from agents.company_agent import company_agent, llm as company_llm
+
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-# ----------------------------
-# FastAPI setup
-# ----------------------------
 app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://rideshareai.vercel.app"],
@@ -26,89 +20,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ----------------------------
-# Load trip data
-# ----------------------------
-DATA_PATH = "data/rideshare_processed.csv"
-df = pd.read_csv(DATA_PATH)
-
-# Clean column names
-df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
-
-# Convert datetime
-df["trip_date_and_time"] = pd.to_datetime(df["trip_date_and_time"], errors="coerce")
-df = df.dropna(subset=["trip_date_and_time"])
-
-# Helper columns
-df["hour"] = df["trip_date_and_time"].dt.hour
-df["date"] = df["trip_date_and_time"].dt.date
-df["day"] = df["trip_date_and_time"].dt.day_name().str.lower()
-df["large_group"] = df["total_passengers"] > 6
-# Rename columns
-
-
-
-# Age groups
-def age_bucket(age):
-    if pd.isna(age):
-        return "unknown"
-    age = int(age)
-    if 18 <= age <= 24:
-        return "18-24"
-    elif 25 <= age <= 34:
-        return "25-34"
-    elif 35 <= age <= 44:
-        return "35-44"
-    else:
-        return "45+"
-
-df["age_group"] = df["age"].apply(age_bucket)
-
-# Optional: normalize hotspots
-hotspot_map = {
-    "moody center": "Moody Center",
-    "coconut club": "Coconut Club",
-    "buford": "Buford's",
-    "the aquarium": "The Aquarium on 6th",
-}
-def normalize_address(addr: str):
-    if not isinstance(addr, str):
-        return addr
-    a = addr.lower()
-    for k, v in hotspot_map.items():
-        if k in a:
-            return v
-    return addr
-
-df["drop_off_normalized"] = df["drop_off_address"].apply(normalize_address)
-df["pick_up_normalized"] = df["pick_up_address"].apply(normalize_address)
-
-# ----------------------------
-# Initialize AI agent
-# ----------------------------
-llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
-
-agent = create_pandas_dataframe_agent(
-    llm,
-    df,
-    verbose=True,
-    allow_dangerous_code=True,
-    handle_parsing_errors=True,
-)
-
-# ----------------------------
-# Request model
-# ----------------------------
 class Query(BaseModel):
     question: str
 
-# ----------------------------
-# Routes
-# ----------------------------
+class CompanyQuery(BaseModel):
+    question: str  # single string input
+
 @app.get("/")
 async def root():
-    return {"message": "Backend is running. Use /chat to send questions."}
+    return {"message": "Backend is running."}
 
+# Rider chat (POST)
 @app.post("/chat")
 async def chat(query: Query):
     # Step 1: Prepare prompt for agent
@@ -123,42 +45,70 @@ If you cannot answer from the dataset, respond with: "I don't know from this dat
 Dataset columns: trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
 drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
 drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
-age, age_group, hour, date, day, large_group. 
-
+age, age_group, hour, date, day, large_group.
 
 User question: {query.question}
 """
 
+    # Step 2: Compute answer using the agent
     try:
-        # Step 2: Let agent compute actual answer
-        response = agent.invoke({"input": query_text})
+        response = rider_agent.invoke({"input": query_text})
         result = response.get("output") or response
+
     except Exception as e:
         print("Agent error:", e)
         result = "Sorry, I couldn't compute the answer."
 
-    # Step 3: Ask LLM to explain the result
+    # Step 3: Generate explanation using the same llm
     try:
         explanation_prompt = f"""
+You are a rideshare data analyst assistant.
+
 User asked: {query.question}
 The computed answer is: {result}
-If the computed answer is that they don't know, then do not provide any explantions.
-Briefly summarize in broken down sections with headings and separators what this means in context of rideshare trends using the actual computed data.
-If it is a list, generate a markdown table.
+
+Instructions:
+- Return a structured markdown report with:
+  1. **Computed Data** → the raw result (number, list, or table)
+  2. **Contextual Analysis** → explain demand patterns
+  3. **Event or Gathering Signals** → 
+     • If ride counts are unusually high for a specific day/time/location, suggest that there may have been a large gathering.
+     • Mention normalized hotspots like "Moody Center", "Q2 Stadium", "6th Street" if relevant.
+     • Highlight unusually high passenger counts (large groups).
+  4. **Comparisons** → compare to other days/times
+  5. **Implications for Drivers** → how this affects earning potential, wait times, or surge pricing
+- If there is no strong evidence for a large gathering, say "No clear indication of a large event."
+- Use markdown headings (##), not bullets, for sections.
 """
-        llm_response = llm.invoke(explanation_prompt).content
+
+        llm_response = rider_llm.invoke(explanation_prompt).content
     except Exception as e:
         print("Explanation error:", e)
         llm_response = result
 
+    # Step 4: Return both the computed result and explanation
     return {
         "reply": llm_response,
         "computed_result": result
     }
 
 
+# ----------------------------
+# Company predictive chat endpoint
+# ----------------------------
+@app.post("/company-chat")
+async def company_chat(query: CompanyQuery):
+    try:
+        # Pass the whole string to the agent
+        response = company_agent.invoke({"input": query.question})
+        result = response.get("output") or response
+    except Exception as e:
+        print("Agent error:", e)
+        result = "Sorry, couldn't compute prediction."
 
+    return {"reply": result}
 
+# Optional: trips endpoint
 @app.get("/trips")
 async def get_trips():
     return df.to_dict(orient="records")
