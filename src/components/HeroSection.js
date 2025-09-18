@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { motion } from "framer-motion"
 
@@ -9,6 +9,7 @@ export default function HeroSection() {
       <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
       <div className="absolute bottom-20 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
 
+      {/* Main Hero content */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -24,6 +25,25 @@ export default function HeroSection() {
           Quickly match rideshare groups, find optimal times, and make planning
           effortless. Built for speed, optimized for you.
         </p>
+
+        {/* Animated Bot / Typing effect */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          className="flex items-center justify-center mb-10"
+        >
+          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+            🤖
+          </div>
+          <div className="ml-4 text-left">
+            <p className="text-white font-mono bg-gray-800 px-3 py-1 rounded shadow animate-pulse">
+              Typing...
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Call to action buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="/chat"

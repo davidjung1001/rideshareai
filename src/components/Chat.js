@@ -15,7 +15,6 @@ export default function Chat() {
     const RenderAIResponse = ({ text }) => {
   if (!text) return null
 
-  // Split sections by --- if used
   const sections = text.split(/^---$/m).map(s => s.trim()).filter(Boolean)
 
   return (
@@ -30,45 +29,38 @@ export default function Chat() {
         lines.forEach((line, i) => {
           if (!line) return
 
-          // Main heading (#)
+          // Headings
           if (line.startsWith("# ")) {
-            elements.push(
-              <h1 key={i} className="text-2xl font-bold text-white my-2">
-                {line.replace("# ", "")}
-              </h1>
-            )
+            elements.push(<h1 key={i} className="text-2xl font-bold text-white my-2">{line.replace("# ", "")}</h1>)
             return
           }
-
-          // Subheading (##)
           if (line.startsWith("## ")) {
-            elements.push(
-              <h2 key={i} className="text-xl font-semibold text-white border-b border-gray-600 my-1 pb-1">
-                {line.replace("## ", "")}
-              </h2>
-            )
+            elements.push(<h2 key={i} className="text-xl font-semibold text-white border-b border-gray-600 my-1 pb-1">{line.replace("## ", "")}</h2>)
             return
           }
 
-          // Bullet points (-)
+          if (line.startsWith("### ")) {
+            elements.push(<h3 key={i} className="text-lg font-medium text-white border-l-4 border-blue-500 pl-2 my-1">{line.replace("### ", "")}</h3>)
+            return
+          }
+
+          // Bullet points
           if (line.startsWith("-")) {
             const formattedLine = line.replace(/^-+\s*/, "").split("**").map((part, idx) =>
               idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
             )
-            elements.push(
-              <li key={i} className="ml-6 list-disc text-sm text-white">{formattedLine}</li>
-            )
+            elements.push(<li key={i} className="ml-6 list-disc text-sm">{formattedLine}</li>)
             return
           }
 
-          // Tables (markdown style)
+          // Table row
           if (line.includes("|")) {
             let cells = line.split("|").map(c => c.trim()).filter(c => c)
-            if (cells.every(c => /^-*$/.test(c))) return
-            if (cells.length) tableRows.push(cells)
+            if (!cells.every(c => /^-*$/.test(c))) tableRows.push(cells)
             return
           }
 
+          // If we reach a non-table line and tableRows exist, render table
           if (tableRows.length > 0) {
             elements.push(
               <div key={`table-${i}`} className="overflow-x-auto my-2">
@@ -99,16 +91,41 @@ export default function Chat() {
           const formattedLine = line.split("**").map((part, idx) =>
             idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
           )
-          elements.push(
-            <p key={i} className="text-sm text-white whitespace-pre-wrap my-1">{formattedLine}</p>
-          )
+          elements.push(<p key={i} className="text-sm whitespace-pre-wrap my-1">{formattedLine}</p>)
         })
+
+        // Flush table at end of section if exists
+        if (tableRows.length > 0) {
+          elements.push(
+            <div key={`table-end-${idx}`} className="overflow-x-auto my-2">
+              <table className="table-auto border border-gray-700 w-full text-sm">
+                <thead>
+                  <tr>
+                    {tableRows[0].map((cell, idx) => (
+                      <th key={idx} className="border px-2 py-1 bg-gray-700 text-white">{cell}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableRows.slice(1).map((row, rIdx) => (
+                    <tr key={rIdx} className="bg-gray-800">
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="border px-2 py-1 text-white">{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
 
         return <div key={idx} className="flex flex-col gap-2">{elements}</div>
       })}
     </div>
   )
 }
+
 
     // -------------------------------
     // Send message to backend
