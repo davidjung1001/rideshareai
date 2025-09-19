@@ -184,10 +184,9 @@ export default function Chat() {
         <div className="flex flex-col h-full">
             {/* Messages */}
             <div className="flex-1 overflow-y-auto flex flex-col gap-3 px-2 py-2
-                scrollbar-thin
-                scrollbar-thumb-purple-500/30
-                scrollbar-track-transparent
-                hover:scrollbar-thumb-purple-500/70">
+                [scrollbar-width:thin] 
+                [scrollbar-color:#8F00FF_transparent]
+                hover:[scrollbar-color:#a64dff_transparent]">
                 {messages.length === 0 && (
                     <div className="text-gray-400 self-center mt-4 text-center">
                         Ask any rideshare question...
