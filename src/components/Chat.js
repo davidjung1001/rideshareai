@@ -13,118 +13,121 @@ export default function Chat() {
     // Helper component to render AI
     // -------------------------------
     const RenderAIResponse = ({ text }) => {
-  if (!text) return null
+        if (!text) return null
 
-  const sections = text.split(/^---$/m).map(s => s.trim()).filter(Boolean)
+        const sections = text.split(/^---$/m).map(s => s.trim()).filter(Boolean)
 
-  return (
-    <div className="flex flex-col gap-6 text-white">
-      {sections.map((sec, idx) => {
-        const lines = sec.split("\n").map(l => l.trim()).filter(Boolean)
-        if (!lines.length) return null
+        return (
+            <div className="flex flex-col gap-6 text-white">
+                {sections.map((sec, idx) => {
+                    const lines = sec.split("\n").map(l => l.trim()).filter(Boolean)
+                    if (!lines.length) return null
 
-        let tableRows = []
-        const elements = []
+                    let tableRows = []
+                    const elements = []
 
-        lines.forEach((line, i) => {
-          if (!line) return
+                    lines.forEach((line, i) => {
+                        if (!line) return
 
-          // Headings
-          if (line.startsWith("# ")) {
-            elements.push(<h1 key={i} className="text-2xl font-bold text-white my-2">{line.replace("# ", "")}</h1>)
-            return
-          }
-          if (line.startsWith("## ")) {
-            elements.push(<h2 key={i} className="text-xl font-semibold text-white border-b border-gray-600 my-1 pb-1">{line.replace("## ", "")}</h2>)
-            return
-          }
+                        // Headings
+                        if (line.startsWith("# ")) {
+                            elements.push(<h1 key={i} className="text-2xl font-bold text-white my-2">{line.replace("# ", "")}</h1>)
+                            return
+                        }
+                        if (line.startsWith("## ")) {
+                            elements.push(<h2 key={i} className="text-xl font-semibold text-white border-b border-gray-600 my-1 pb-1">{line.replace("## ", "")}</h2>)
+                            return
+                        }
 
-          if (line.startsWith("### ")) {
-            elements.push(<h3 key={i} className="text-lg font-medium text-white border-l-4 border-blue-500 pl-2 my-1">{line.replace("### ", "")}</h3>)
-            return
-          }
+                        if (line.startsWith("### ")) {
+                            elements.push(<h3 key={i} className="text-lg font-medium text-white border-l-4 border-blue-500 pl-2 my-1">{line.replace("### ", "")}</h3>)
+                            return
+                        }
 
-          // Bullet points
-          if (line.startsWith("-")) {
-            const formattedLine = line.replace(/^-+\s*/, "").split("**").map((part, idx) =>
-              idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
-            )
-            elements.push(<li key={i} className="ml-6 list-disc text-sm">{formattedLine}</li>)
-            return
-          }
+                        // Bullet points
+                        if (line.startsWith("-")) {
+                            const formattedLine = line.replace(/^-+\s*/, "").split("**").map((part, idx) =>
+                                idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                            )
+                            elements.push(<li key={i} className="ml-6 list-disc text-sm">{formattedLine}</li>)
+                            return
+                        }
 
-          // Table row
-          if (line.includes("|")) {
-            let cells = line.split("|").map(c => c.trim()).filter(c => c)
-            if (!cells.every(c => /^-*$/.test(c))) tableRows.push(cells)
-            return
-          }
+                        // Table row
+                        if (line.includes("|")) {
+                            let cells = line.split("|").map(c => c.trim()).filter(c => c)
+                            if (!cells.every(c => /^-*$/.test(c))) tableRows.push(cells)
+                            return
+                        }
 
-          // If we reach a non-table line and tableRows exist, render table
-          if (tableRows.length > 0) {
-            elements.push(
-              <div key={`table-${i}`} className="overflow-x-auto my-2">
-                <table className="table-auto border border-gray-700 w-full text-sm">
-                  <thead>
-                    <tr>
-                      {tableRows[0].map((cell, idx) => (
-                        <th key={idx} className="border px-2 py-1 bg-gray-700 text-white">{cell}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableRows.slice(1).map((row, rIdx) => (
-                      <tr key={rIdx} className="bg-gray-800">
-                        {row.map((cell, cIdx) => (
-                          <td key={cIdx} className="border px-2 py-1 text-white">{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-            tableRows = []
-          }
+                        // Helper function to render a table
+                        const renderTable = (rows, key) => (
+                            <div key={key} className="overflow-x-auto my-2">
+                                <table className="table-auto border border-gray-700 w-full text-sm">
+                                    <thead>
+                                        <tr>
+                                            {rows[0].map((cell, idx) => (
+                                                <th key={idx} className="border px-2 py-1 bg-gray-700 text-white">{cell}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rows.slice(1).map((row, rIdx) => (
+                                            <tr key={rIdx} className="bg-gray-800">
+                                                {row.map((cell, cIdx) => (
+                                                    <td key={cIdx} className="border px-2 py-1 text-white">{cell}</td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
 
-          // Paragraph with **bold**
-          const formattedLine = line.split("**").map((part, idx) =>
-            idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
-          )
-          elements.push(<p key={i} className="text-sm whitespace-pre-wrap my-1">{formattedLine}</p>)
-        })
+                        // Flush table only when a new heading is encountered
+                        if ((line.startsWith("#") || line.startsWith("##") || line.startsWith("###")) && tableRows.length > 0) {
+                            elements.push(renderTable(tableRows, `table-${i}`))
+                            tableRows = []
+                        }
 
-        // Flush table at end of section if exists
-        if (tableRows.length > 0) {
-          elements.push(
-            <div key={`table-end-${idx}`} className="overflow-x-auto my-2">
-              <table className="table-auto border border-gray-700 w-full text-sm">
-                <thead>
-                  <tr>
-                    {tableRows[0].map((cell, idx) => (
-                      <th key={idx} className="border px-2 py-1 bg-gray-700 text-white">{cell}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.slice(1).map((row, rIdx) => (
-                    <tr key={rIdx} className="bg-gray-800">
-                      {row.map((cell, cIdx) => (
-                        <td key={cIdx} className="border px-2 py-1 text-white">{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        // Paragraph with **bold**
+                        const formattedLine = line.split("**").map((part, idx) =>
+                            idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                        )
+                        elements.push(<p key={i} className="text-sm whitespace-pre-wrap my-1">{formattedLine}</p>)
+                    })
+
+                    // Flush table at end of section if exists
+                    if (tableRows.length > 0) {
+                        elements.push(
+                            <div key={`table-end-${idx}`} className="overflow-x-auto my-2">
+                                <table className="table-auto border border-gray-700 w-full text-sm">
+                                    <thead>
+                                        <tr>
+                                            {tableRows[0].map((cell, idx) => (
+                                                <th key={idx} className="border px-2 py-1 bg-gray-700 text-white">{cell}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {tableRows.slice(1).map((row, rIdx) => (
+                                            <tr key={rIdx} className="bg-gray-800">
+                                                {row.map((cell, cIdx) => (
+                                                    <td key={cIdx} className="border px-2 py-1 text-white">{cell}</td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
+                    }
+
+                    return <div key={idx} className="flex flex-col gap-2">{elements}</div>
+                })}
             </div>
-          )
-        }
-
-        return <div key={idx} className="flex flex-col gap-2">{elements}</div>
-      })}
-    </div>
-  )
-}
+        )
+    }
 
 
     // -------------------------------
@@ -139,7 +142,7 @@ export default function Chat() {
         setLoading(true)
 
         try {
-            const res = await fetch("https://rideshareai.onrender.com/chat", {
+            const res = await fetch("http://127.0.0.1:8000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question: input }),
@@ -150,21 +153,7 @@ export default function Chat() {
             const data = await res.json()
             const botText = data.reply || data.answer || ""
 
-            let current = ""
-            for (let char of botText) {
-                current += char
-                setMessages(prev => {
-                    const newMessages = [...prev]
-                    const last = newMessages[newMessages.length - 1]
-                    if (last?.role === "bot") {
-                        last.text = current
-                    } else {
-                        newMessages.push({ role: "bot", text: current })
-                    }
-                    return newMessages
-                })
-                await new Promise(r => setTimeout(r, 3)) // typing speed
-            }
+            setMessages(prev => [...prev, { role: "bot", text: botText }])
         } catch (err) {
             console.error(err)
             setMessages(prev => [...prev, { role: "bot", text: "Error: could not reach server." }])

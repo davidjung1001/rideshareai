@@ -45,16 +45,13 @@ If you cannot answer from the dataset, respond with: "I don't know from this dat
 Dataset columns: trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
 drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
 drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
-age, age_group, hour, date, day, large_group.
+age, age_group, hour, date, day, large_group, destination.
 
-When the user asks for ride counts (e.g., "how many rides on Friday"), you must:
-1. Total rides.
-2. Top 5 pickup locations.
-3. Top 5 dropoff locations.
-4. Average passengers per ride.
-5. Peak ride hours.
-Do NOT add extra backticks.
-If data is missing, state that clearly.
+Also include other relevant data from the dataframe.
+When asked about top destinations, always only include the top 3.
+When asked about how many trips to a certain place, look for the key words in the destination column.
+If someone asks about a weekday (e.g. like friday), include top destinations and peak times.
+Present the result in a markdown table with markdown headings.
 
 User question: {query.question}
 """
@@ -69,31 +66,34 @@ User question: {query.question}
         result = "Sorry, I couldn't compute the answer."
 
     # Step 3: Generate explanation using the same llm
-    try:
-        explanation_prompt = f"""
+    if result != "Sorry, I couldn't compute the answer." and "I don't know from this data." not in str(result):    
+        try:
+            explanation_prompt = f"""
 You are a rideshare data analyst assistant.
 
 User asked: {query.question}
 The computed answer is: {result}
 
 Instructions:
-- Return a structured markdown report with:
-  1. **Computed Data** → the raw result (number, list, or table)
-  2. **Contextual Analysis** → explain demand patterns
-  3. **Event or Gathering Signals** → 
-     • If ride counts are unusually high for a specific day/time/location, suggest that there may have been a large gathering.
-     • Mention normalized hotspots like "Moody Center", "Q2 Stadium", "6th Street" if relevant.
-     • Highlight unusually high passenger counts (large groups).
-  4. **Comparisons** → compare to other days/times
-  5. **Implications for Drivers** → how this affects earning potential, wait times, or surge pricing
-- If there is no strong evidence for a large gathering, say "No clear indication of a large event."
-- Use markdown headings (##), not bullets, for sections.
+Do NOT write explantation outside of the information from the dataframe.
+Always return time as AM and PM.
+- Always generate a structured markdown report with the following sections:
+  1. **Computed Data** → present the raw number, list, or table result
+  2. **Contextual Analysis** → explain what this means in terms of rideshare trends
+  3. **Comparisons** → compare with other days, times, or groups if possible
+  4. **Implications for Riders/Drivers** → explain the practical meaning
+- Use headings (##) instead of bullets for section titles.
+- Use bullet points (•) only inside sections, not for every line.
+- Present the data in a markdown format.
+- Keep explanations concise but insightful.
 """
-
-        llm_response = rider_llm.invoke(explanation_prompt).content
-    except Exception as e:
-        print("Explanation error:", e)
+            llm_response = rider_llm.invoke(explanation_prompt).content
+        except Exception as e:
+            print("Explanation error:", e)
+            llm_response = result
+    else:
         llm_response = result
+
 
     # Step 4: Return both the computed result and explanation
     return {

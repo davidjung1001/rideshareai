@@ -13,7 +13,7 @@ llm = ChatOpenAI(
 )
 
 # Load trip data
-DATA_PATH = "data/rides_processed_new.csv"
+DATA_PATH = "data/rides_processed_new2.csv"
 df = pd.read_csv(DATA_PATH)
 
 # --- Preprocessing (your existing cleaning code here) ---
@@ -60,7 +60,45 @@ def normalize_address(addr: str):
 df["drop_off_normalized"] = df["drop_off_address"].apply(normalize_address)
 df["pick_up_normalized"] = df["pick_up_address"].apply(normalize_address)
 
+
+# --- Precompute summaries ---
+
+# Weekday-level aggregation (all Mondays combined, all Fridays combined, etc.)
+weekday_summary = {}
+for d in df["day"].unique():
+    filtered = df[df["day"] == d]
+    weekday_summary[d] = {
+        "total_rides": filtered.shape[0],
+        "top_pickups": filtered["pick_up_normalized"].value_counts().head(5).to_dict(),
+        "top_dropoffs": filtered["drop_off_normalized"].value_counts().head(5).to_dict(),
+        "avg_passengers": round(filtered["total_passengers"].mean(), 2),
+        "peak_hours": filtered["hour"].value_counts().head(3).to_dict(),
+    }
+
+# Daily-level aggregation (per calendar date)
+daily_summary = {}
+for date, group in df.groupby("date"):
+    d = str(date)
+    daily_summary[d] = {
+        "day_name": group["day"].iloc[0],
+        "total_rides": group.shape[0],
+        "top_pickups": group["pick_up_normalized"].value_counts().head(5).to_dict(),
+        "top_dropoffs": group["drop_off_normalized"].value_counts().head(5).to_dict(),
+        "avg_passengers": round(group["total_passengers"].mean(), 2),
+        "peak_hours": group["hour"].value_counts().head(3).to_dict(),
+    }
+
+weekday_df = pd.DataFrame.from_dict(weekday_summary, orient="index")
+daily_df = pd.DataFrame.from_dict(daily_summary, orient="index")
+
+
 # LLM + agent
+
+env = {
+    "df": df,
+    "weekday_df": weekday_df,
+    "daily_df": daily_df,
+}
 
 rider_agent = create_pandas_dataframe_agent(
     llm,
@@ -68,4 +106,5 @@ rider_agent = create_pandas_dataframe_agent(
     verbose=True,
     allow_dangerous_code=True,
     handle_parsing_errors=True,
+    
 )
