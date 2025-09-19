@@ -1,10 +1,10 @@
-'use client'
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/Chat"
 import CompanyChat from "@/components/CompanyChat"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Robot } from "lucide-react"
 
 export default function ChatPage() {
   const [activeChat, setActiveChat] = useState("rideshare")
@@ -13,22 +13,24 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black flex flex-col items-center p-6 relative overflow-hidden">
       {/* Header */}
-      <div className="w-full max-w-6xl flex items-center justify-between mb-6 z-10">
-        <div className="flex items-center">
-          <button
-            onClick={() => router.push("/")}
-            className="text-white p-2 rounded-full hover:bg-gray-800 transition mr-4 shadow-md"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-3xl font-bold text-white tracking-wide">
-            AI Rideshare Chat
-          </h1>
+      <div className="w-full max-w-6xl flex items-center justify-between mb-6 z-10 relative">
+        {/* Back button */}
+        <button
+          onClick={() => router.push("/")}
+          className="text-white p-2 rounded-full hover:bg-gray-800 transition shadow-md"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+
+        {/* Title centered */}
+        <div className="flex items-center justify-center flex-1">
+          <span className="text-purple-400 text-xl mr-2">🤖</span>
+          <h1 className="text-3xl font-bold text-white tracking-wide">Fetii AI</h1>
         </div>
 
-        {/* Toggle buttons (desktop) */}
+        {/* Toggle buttons on the right */}
         <div className="hidden sm:flex gap-2">
-          {["rideshare", "predictor"].map(chat => (
+          {["rideshare", "mapView"].map(chat => (
             <button
               key={chat}
               onClick={() => setActiveChat(chat)}
@@ -39,7 +41,7 @@ export default function ChatPage() {
                   : "border-gray-700 text-gray-400 hover:border-purple-400 hover:text-white transition-all"}
               `}
             >
-              {chat.charAt(0).toUpperCase() + chat.slice(1)}
+              {chat === "rideshare" ? "Rideshare" : "Map View"}
             </button>
           ))}
         </div>
@@ -52,26 +54,26 @@ export default function ChatPage() {
             className="bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 shadow-md"
           >
             <option value="rideshare">Rideshare</option>
-            <option value="predictor">Predictor</option>
+            <option value="mapView">Map View</option>
           </select>
         </div>
       </div>
 
       {/* Chat container */}
-        <div
-  className="
-    relative
-    w-full 
-    h-[80vh]
-    max-w-3xl
-    bg-gray-800/90
-    rounded-2xl
-    shadow-md
-    flex flex-col
-    overflow-hidden
-    bg-transparent
-  "
->
+      <div
+        className="
+          relative
+          w-full 
+          h-[80vh]
+          max-w-3xl
+          bg-gray-800/90
+          rounded-2xl
+          shadow-md
+          flex flex-col
+          overflow-hidden
+          bg-transparent
+        "
+      >
         {activeChat === "rideshare" ? <Chat /> : <CompanyChat />}
       </div>
     </div>

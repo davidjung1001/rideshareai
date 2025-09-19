@@ -1,6 +1,7 @@
 # main.py
 import os
 from fastapi import FastAPI
+from fastapi import Query as FQuery
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -83,7 +84,7 @@ User question: {query.question}
         result = response.get("output") or response
     except Exception as e:
         print("Agent error:", e)
-        result = "Sorry, I couldn't compute the answer."
+        result = "Sorry, I couldn't compute the answer. Please try rephrasing the question the prompt to be more specific."
 
     # Step 4: Generate contextual explanation using LLM
     if result != "Sorry, I couldn't compute the answer." and "I don't know from this data." not in str(result):
@@ -138,3 +139,34 @@ async def company_chat(query: CompanyQuery):
 @app.get("/trips")
 async def get_trips():
     return df.to_dict(orient="records")
+
+@app.get("/hotzones")
+async def get_hotzones(day: str = None, hour: str = None):
+    df_filtered = df.copy()
+
+    if day:
+        df_filtered = df_filtered[df_filtered['day'].str.lower() == day.lower()]
+
+    if hour is not None:
+        try:
+            hour_int = int(hour)
+            df_filtered = df_filtered[df_filtered['hour'] == hour_int]
+        except ValueError:
+            pass
+
+    top_zones = (
+        df_filtered.groupby(['drop_off_latitude', 'drop_off_longitude', 'drop_off_normalized'])
+        .size().reset_index(name='count')
+        .sort_values('count', ascending=False)
+        .head(10)
+    )
+
+    return [
+        {
+            "lat": row['drop_off_latitude'],
+            "lng": row['drop_off_longitude'],
+            "count": int(row['count']),
+            "name": row['drop_off_normalized']
+        }
+        for _, row in top_zones.iterrows()
+    ]

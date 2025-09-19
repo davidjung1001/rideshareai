@@ -169,7 +169,7 @@ export default function Chat() {
         setLoading(true)
 
         try {
-            const res = await fetch("https://rideshareai.onrender.com/chat", {
+            const res = await fetch("http://127.0.0.1:8000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question: input }),
@@ -215,13 +215,13 @@ export default function Chat() {
                         // Bot response as plain text, no bubble
                         <div key={i} className="max-w-3xl self-start text-left">
                             <RenderAIResponse text={m.text} />
-                            {loading && <span className="animate-pulse text-blue-400 text-sm">Typing...</span>}
                         </div>
                     )
                 ))}
 
                 <div ref={messagesEndRef} />
             </div>
+                {loading && <span className="animate-pulse text-blue-400 text-sm">Typing...</span>}
 
             {/* Fixed input bar */}
             <div className="fixed bottom-4 left-0 w-full flex justify-center px-4">
