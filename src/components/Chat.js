@@ -29,6 +29,9 @@ export default function Chat() {
                     lines.forEach((line, i) => {
                         if (!line) return
 
+
+                        console.log("LINE DEBUG:", JSON.stringify(line))
+
                         // Headings
                         if (line.startsWith("# ")) {
                             elements.push(<h1 key={i} className="text-2xl font-bold text-white my-2">{line.replace("# ", "")}</h1>)
@@ -73,20 +76,31 @@ export default function Chat() {
                         if (line.includes("|")) {
                             let cells = line.split("|").map(c => c.trim()).filter(c => c)
                             // ignore separator rows like |---|---|
-                            if (!cells.every(c => /^-*$/.test(c))) {
+                            const isSeparator = cells.every(c => /^-+$/.test(c))
+
+                            if (!isSeparator) {
                                 tableRows.push(cells)
                             }
 
                             // Check if next line is not a table row
                             const nextLine = lines[i + 1]
-                            const isNextTable = nextLine && nextLine.includes("|") && !nextLine.split("|").every(c => /^-*$/.test(c))
+                            const nextCells = nextLine?.split("|").map(c => c.trim()).filter(c => c) || []
+                            const isNextSeparator = nextCells.length > 0 && nextCells.every(c => /^-+$/.test(c))
+                            const isNextTableRow = nextLine && nextLine.includes("|") && !isNextSeparator
+
+
 
                             // Flush table immediately if next line is not a table row
-                            if (!isNextTable && tableRows.length > 0) {
-                                const filteredRows = tableRows.filter(r => !r.every(c => /^-*$/.test(c)))
-                                elements.push(renderTable(filteredRows, `table-${i}`))
+                            if (!isNextTableRow && !isNextSeparator && tableRows.length > 0) {
+                                elements.push(renderTable(tableRows, `table-${i}`))
                                 tableRows = []
                             }
+                            return
+                        }
+
+                        if (line.trim() === "" && tableRows.length > 0) {
+                            elements.push(renderTable(tableRows, `table-blank-${i}`))
+                            tableRows = []
                             return
                         }
 
@@ -155,7 +169,7 @@ export default function Chat() {
         setLoading(true)
 
         try {
-            const res = await fetch("https://rideshareai.onrender.com/chat", {
+            const res = await fetch("http://127.0.0.1:8000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question: input }),
@@ -210,24 +224,24 @@ export default function Chat() {
             </div>
 
             {/* Fixed input bar */}
-             <div className="fixed bottom-4 left-0 w-full flex justify-center px-4">
-        <div className="flex w-full max-w-3xl bg-gray-900/70 backdrop-blur-md border border-cyan-500 rounded-none shadow-lg px-4 py-2 items-center gap-2">
-          <input
-            type="text"
-            placeholder="Type a question..."
-            className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none px-4 py-2 text-base"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMessage()}
-          />
-          <button
-            onClick={sendMessage}
-            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-none shadow-[0_0_10px_rgba(128,0,255,0.7)] font-semibold transition-all"
-          >
-            Send
-          </button>
-        </div>
-      </div>
+            <div className="fixed bottom-4 left-0 w-full flex justify-center px-4">
+                <div className="flex w-full max-w-3xl bg-gray-900/70 backdrop-blur-md border border-cyan-500 rounded-none shadow-lg px-4 py-2 items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder="Type a question..."
+                        className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none px-4 py-2 text-base"
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && sendMessage()}
+                    />
+                    <button
+                        onClick={sendMessage}
+                        className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-none shadow-[0_0_10px_rgba(128,0,255,0.7)] font-semibold transition-all"
+                    >
+                        Send
+                    </button>
+                </div>
+            </div>
         </div>
     )
 }

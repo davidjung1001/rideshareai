@@ -31,60 +31,76 @@ async def root():
     return {"message": "Backend is running."}
 
 # Rider chat (POST)
+# ----------------------------
+# Rider chat (POST) - improved
+# ----------------------------
 @app.post("/chat")
 async def chat(query: Query):
-    # Step 1: Prepare prompt for agent
+    # Step 1: Build a dataset summary for context
+    top_pickups = df['pick_up_normalized'].value_counts().head(5).to_dict()
+    top_dropoffs = df['drop_off_normalized'].value_counts().head(5).to_dict()
+    total_trips = len(df)
+    date_range = f"{df['trip_date_and_time'].min()} to {df['trip_date_and_time'].max()}"
+    missing_ages = df['age'].isna().sum()
+
+    summary = f"""
+Dataset Summary:
+- Total trips: {total_trips}
+- Date range: {date_range}
+- Missing age values: {missing_ages}
+- Top 5 pickup locations: {top_pickups}
+- Top 5 dropoff locations: {top_dropoffs}
+"""
+
+    # Step 2: Build enhanced agent prompt
     query_text = f"""
 You are a rideshare data analyst.
-You must use only the python_repl_ast tool to execute pandas commands on the dataframe df.
-Do not out put output extra words or sentences only the python command to execute.
-Do NOT output raw Python.
-Do not add extra backticks
-If you cannot answer from the dataset, respond with: "I don't know from this data." and explain why you couldn't.
+Use only the python_repl_ast tool to execute pandas commands on the dataframe df.
+Do NOT output raw Python code or extra words.
+Do NOT use extra backticks.
+If you cannot answer from the dataset, respond: "I don't know from this data." and explain why.
 
 Dataset columns: trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
 drop_off_latitude, drop_off_longitude, pick_up_address, drop_off_address,
 drop_off_normalized, pick_up_normalized, trip_date_and_time, total_passengers,
 age, age_group, hour, date, day, large_group, destination.
 
-Also include other relevant data from the dataframe.
-When asked about top destinations, always only include the top 3.
-When asked about how many trips to a certain place, look for the key words in the destination column.
-If someone asks about a weekday (e.g. like friday), include top destinations and peak times.
-Present the result in a markdown table with markdown headings.
+Always handle missing data gracefully:
+- If age or other fields are missing, compute using available data and note the limitation.
+- When asked about top destinations, return only the top 3.
+- When asked about weekdays, include top destinations and peak times.
+Present results in a clean markdown table without using extra backticks. 
+
+Dataset summary:
+{summary}
 
 User question: {query.question}
 """
 
-    # Step 2: Compute answer using the agent
+    # Step 3: Invoke the rider agent
     try:
         response = rider_agent.invoke({"input": query_text})
         result = response.get("output") or response
-
     except Exception as e:
         print("Agent error:", e)
         result = "Sorry, I couldn't compute the answer."
 
-    # Step 3: Generate explanation using the same llm
-    if result != "Sorry, I couldn't compute the answer." and "I don't know from this data." not in str(result):    
+    # Step 4: Generate contextual explanation using LLM
+    if result != "Sorry, I couldn't compute the answer." and "I don't know from this data." not in str(result):
         try:
             explanation_prompt = f"""
 You are a rideshare data analyst assistant.
-
 User asked: {query.question}
-The computed answer is: {result}
+Computed result: {result}
 
 Instructions:
-Do NOT write explantation outside of the information from the dataframe.
-Always return time as AM and PM.
-- Always generate a structured markdown report with the following sections:
-  1. **Computed Data** → present the raw number, list, or table result
-  2. **Contextual Analysis** → explain what this means in terms of rideshare trends
-  3. **Comparisons** → compare with other days, times, or groups if possible
-  4. **Implications for Riders/Drivers** → explain the practical meaning
-- Use headings (##) instead of bullets for section titles.
-- Use bullet points (•) only inside sections, not for every line.
-- Present the data in a markdown format.
+- Only use information from the dataframe.
+- Present a structured markdown report with sections:
+  1. ### Computed Data → show the table, number, or list
+  2. ### Contextual Analysis → explain what this means in rideshare trends
+  3. ### Comparisons → compare with other days, times, or groups if possible
+  4. ### Implications for Riders/Drivers → explain practical meaning
+- Use AM/PM for times.
 - Keep explanations concise but insightful.
 """
             llm_response = rider_llm.invoke(explanation_prompt).content
@@ -94,12 +110,13 @@ Always return time as AM and PM.
     else:
         llm_response = result
 
-
-    # Step 4: Return both the computed result and explanation
+    # Step 5: Return structured reply
     return {
         "reply": llm_response,
-        "computed_result": result
+        "computed_result": result,
+        "dataset_summary": summary
     }
+
 
 
 # ----------------------------
