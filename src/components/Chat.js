@@ -44,23 +44,8 @@ export default function Chat() {
                             return
                         }
 
-                        // Bullet points
-                        if (line.startsWith("-")) {
-                            const formattedLine = line.replace(/^-+\s*/, "").split("**").map((part, idx) =>
-                                idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
-                            )
-                            elements.push(<li key={i} className="ml-6 list-disc text-sm">{formattedLine}</li>)
-                            return
-                        }
 
-                        // Table row
-                        if (line.includes("|")) {
-                            let cells = line.split("|").map(c => c.trim()).filter(c => c)
-                            if (!cells.every(c => /^-*$/.test(c))) tableRows.push(cells)
-                            return
-                        }
-
-                        // Helper function to render a table
+                        // Helper function to render a table (keep as-is)
                         const renderTable = (rows, key) => (
                             <div key={key} className="overflow-x-auto my-2">
                                 <table className="table-auto border border-gray-700 w-full text-sm">
@@ -84,11 +69,39 @@ export default function Chat() {
                             </div>
                         )
 
-                        // Flush table only when a new heading is encountered
-                        if ((line.startsWith("#") || line.startsWith("##") || line.startsWith("###")) && tableRows.length > 0) {
-                            elements.push(renderTable(tableRows, `table-${i}`))
-                            tableRows = []
+                        // Table row
+                        if (line.includes("|")) {
+                            let cells = line.split("|").map(c => c.trim()).filter(c => c)
+                            // ignore separator rows like |---|---|
+                            if (!cells.every(c => /^-*$/.test(c))) {
+                                tableRows.push(cells)
+                            }
+
+                            // Check if next line is not a table row
+                            const nextLine = lines[i + 1]
+                            const isNextTable = nextLine && nextLine.includes("|") && !nextLine.split("|").every(c => /^-*$/.test(c))
+
+                            // Flush table immediately if next line is not a table row
+                            if (!isNextTable && tableRows.length > 0) {
+                                const filteredRows = tableRows.filter(r => !r.every(c => /^-*$/.test(c)))
+                                elements.push(renderTable(filteredRows, `table-${i}`))
+                                tableRows = []
+                            }
+                            return
                         }
+
+                        // Bullet points
+                        if (line.startsWith("-")) {
+                            const formattedLine = line.replace(/^-+\s*/, "").split("**").map((part, idx) =>
+                                idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                            )
+                            elements.push(<li key={i} className="ml-6 list-disc text-sm">{formattedLine}</li>)
+                            return
+                        }
+
+
+                        // Remove the "flush only on heading" block — it's no longer needed
+
 
                         // Paragraph with **bold**
                         const formattedLine = line.split("**").map((part, idx) =>
@@ -142,7 +155,7 @@ export default function Chat() {
         setLoading(true)
 
         try {
-            const res = await fetch("https://rideshareai.onrender.com/chat", {
+            const res = await fetch("http://127.0.0.1:8000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question: input }),
@@ -170,8 +183,11 @@ export default function Chat() {
     return (
         <div className="flex flex-col h-full">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4
-      scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-700">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-3 px-2 py-2
+                scrollbar-thin
+                scrollbar-thumb-purple-500/30
+                scrollbar-track-transparent
+                hover:scrollbar-thumb-purple-500/70">
                 {messages.length === 0 && (
                     <div className="text-gray-400 self-center mt-4 text-center">
                         Ask any rideshare question...
@@ -195,24 +211,24 @@ export default function Chat() {
             </div>
 
             {/* Fixed input bar */}
-            <div className="fixed bottom-4 left-0 w-full flex justify-center px-4">
-                <div className="flex w-full max-w-3xl bg-gray-800 rounded-full shadow-lg px-4 py-2 items-center">
-                    <input
-                        type="text"
-                        placeholder="Type a question..."
-                        className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none px-4 py-2 rounded-full text-base"
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && sendMessage()}
-                    />
-                    <button
-                        onClick={sendMessage}
-                        className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-semibold text-base"
-                    >
-                        Send
-                    </button>
-                </div>
-            </div>
+             <div className="fixed bottom-4 left-0 w-full flex justify-center px-4">
+        <div className="flex w-full max-w-3xl bg-gray-900/70 backdrop-blur-md border border-cyan-500 rounded-none shadow-lg px-4 py-2 items-center gap-2">
+          <input
+            type="text"
+            placeholder="Type a question..."
+            className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none px-4 py-2 text-base"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendMessage()}
+          />
+          <button
+            onClick={sendMessage}
+            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-none shadow-[0_0_10px_rgba(128,0,255,0.7)] font-semibold transition-all"
+          >
+            Send
+          </button>
+        </div>
+      </div>
         </div>
     )
 }

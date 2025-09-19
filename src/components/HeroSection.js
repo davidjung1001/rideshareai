@@ -18,7 +18,7 @@ export default function HeroSection() {
       >
         <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
           <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            AI Rideshare Assistant
+            Fetii AI 
           </span>
         </h1>
         <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto mb-10">
@@ -43,21 +43,27 @@ export default function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Call to action buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="/chat"
-            className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition"
-          >
-            🚗 Try it Now
-          </a>
-          <a
-            href="#features"
-            className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-xl shadow hover:bg-gray-50 border border-blue-100 transition"
-          >
-            Learn More
-          </a>
-        </div>
+       {/* Call to action buttons */}
+<div className="flex flex-col sm:flex-row gap-6 justify-center">
+  <a
+    href="/chat"
+    className="px-8 py-3 text-white font-bold rounded-none border-2 border-purple-400 shadow-[0_0_10px_rgba(128,0,255,0.7)] 
+               bg-gray-800 
+               hover:shadow-[0_0_20px_rgba(255,0,255,0.8)] hover:scale-105 
+               transition-all duration-300"
+  >
+    Try it Now
+  </a>
+  <a
+    href="#features"
+    className="px-8 py-3 text-gray font-bold rounded-none border-2 border-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.6)] 
+               bg-transparent 
+               hover:bg-cyan-500 hover:shadow-[0_0_18px_rgba(0,255,255,0.9)] hover:scale-105 
+               transition-all duration-300"
+  >
+    Learn More
+  </a>
+</div>
       </motion.div>
     </section>
   )
