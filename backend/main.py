@@ -58,7 +58,7 @@ Dataset Summary:
 You are a rideshare data analyst.
 Use only the python_repl_ast tool to execute pandas commands on the dataframe df.
 Do NOT output raw Python code or extra words.
-If you cannot answer from the dataset, respond: "I don't know from this data.".
+If you cannot answer from the dataset, respond: I don't know from this data. No backticks.
 Do NOT use extra backticks.
 
 Dataset columns: trip_id, booking_user_id, pick_up_latitude, pick_up_longitude,
@@ -84,10 +84,10 @@ User question: {query.question}
         result = response.get("output") or response
     except Exception as e:
         print("Agent error:", e)
-        result = "Sorry, I couldn't compute the answer. Please try rephrasing the question the prompt to be more specific."
+        result = "Sorry, I couldn't compute the answer. Please try rephrasing the question. Try putting locations in quotations and using words like TRIPS or RIDES."
 
     # Step 4: Generate contextual explanation using LLM
-    if result != "Sorry, I couldn't compute the answer." and "I don't know from this data." not in str(result):
+    if result != "Sorry, I couldn't compute the answer. Please try rephrasing the question. Try putting locations in quotations and using words like TRIPS or RIDES." and "I don't know from this data." not in str(result):
         try:
             explanation_prompt = f"""
 You are a rideshare data analyst assistant.
