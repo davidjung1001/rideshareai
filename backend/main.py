@@ -94,7 +94,9 @@ You are a rideshare data analyst assistant.
 User asked: {query.question}
 Computed result: {result}
 
-Do NOT use outside information.
+6th is part of the address NOT a date. 
+Do NOT invent new data and only base it off of the result.
+ONLY use dates that appear in the result. Do not use date if it is not provided.
 Instructions:
 - Only use information from the dataframe.
 - Present a structured markdown report with sections:
