@@ -5,12 +5,14 @@ from fastapi import Query as FQuery
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import logging
 
 from agents.rider_agent import rider_agent, df, llm as rider_llm
 from agents.company_agent import company_agent, llm as company_llm
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
 app = FastAPI()
 app.add_middleware(
@@ -37,6 +39,7 @@ async def root():
 # ----------------------------
 @app.post("/chat")
 async def chat(query: Query):
+    logging.info(f"User question: {query.question}")
     # Step 1: Build a dataset summary for context
     top_pickups = df['pick_up_normalized'].value_counts().head(5).to_dict()
     top_dropoffs = df['drop_off_normalized'].value_counts().head(5).to_dict()
