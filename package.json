@@ -29,5 +29,13 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidjung1001/rideshareai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/davidjung1001/rideshareai/issues"
+  },
+  "homepage": "https://github.com/davidjung1001/rideshareai#readme"
 }
